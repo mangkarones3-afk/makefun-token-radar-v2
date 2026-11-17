@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Token Radar v2 — pre-token protocols ranked, every farm plan netted to a verdict</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="masthead">
+  <div class="brand">
+    <h1>TOKEN RADAR <span class="v2">v2</span></h1>
+    <p class="tagline">Every protocol in the snapshot that records no token, ranked by an implied launch value fitted from the snapshot's own tokenized protocols — and every farm plan costed session by session to a net verdict, with the model's out-of-sample error printed, not hidden.</p>
+  </div>
+  <div class="snapshot-note">
+    <div>Snapshot: <strong data-fill="as_of">—</strong></div>
+    <div class="src" data-fill="source">—</div>
+    <div><span data-fill="protocols">—</span> protocols · watchlist floor $<span data-fill="floor">—</span></div>
+  </div>
+</header>
+
+<section class="kpis" aria-label="Headline figures">
+  <div class="kpi hero">
+    <div class="kpi-label">Implied value on the board</div>
+    <div class="kpi-value" data-fill="total_implied">—</div>
+    <div class="kpi-sub">sum of implied values, all ranked protocols</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Protocols ranked</div>
+    <div class="kpi-value" data-fill="board_rows">—</div>
+    <div class="kpi-sub"><span data-fill="self_found">—</span> found beyond the watchlist</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Watchlist covered</div>
+    <div class="kpi-value"><span data-fill="watch_covered">—</span><span class="kpi-dim"> / </span><span data-fill="watch_total">—</span></div>
+    <div class="kpi-sub">every watchlist protocol is on the board</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Model error, out-of-sample</div>
+    <div class="kpi-value"><span data-fill="oos_median_ape">—</span><span class="kpi-dim"> median</span></div>
+    <div class="kpi-sub">held-out test, n=<span data-fill="oos_n">—</span> · median factor ×/<span data-fill="oos_factor">—</span></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Plans net-positive, Scenario S</div>
+    <div class="kpi-value" data-fill="verdict_positive">—</div>
+    <div class="kpi-sub">of <span data-fill="board_rows2">—</span> costed plans · <span data-fill="verdict_negative">—</span> net-negative</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Median plan cost</div>
+    <div class="kpi-value" data-fill="median_cost">—</div>
+    <div class="kpi-sub">gas + protocol fees, whole window · <span data-fill="fallback_rows">—</span> rows priced on the global fallback</div>
+  </div>
+</section>
+
+<nav class="tabs" aria-label="Views">
+  <button class="tab active" data-view="board" type="button">The board</button>
+  <button class="tab" data-view="live" type="button">Already trading</button>
+  <button class="tab" data-view="method" type="button">How it works</button>
+</nav>
+
+<section id="view-board" class="view">
+  <p class="takeaway">The takeaway: <span data-fill="verdict_positive">—</span> of <span data-fill="board_rows">—</span> farm plans net positive under Scenario S — but <span data-fill="fallback_rows">—</span> rows, ranks 1–4 included, are priced on the global fallback rather than a category fit, so the top of this board is TVL order wearing a fitted multiple. The verdicts are only as strong as that pricing; the method view shows exactly where it is blunt.</p>
+  <div class="controls">
+    <input id="q" type="search" placeholder="Search name or slug…" aria-label="Search protocols">
+    <select id="f-category" aria-label="Filter by category"><option value="">All categories</option></select>
+    <select id="f-chain" aria-label="Filter by chain"><option value="">All chains</option></select>
+    <select id="f-verdict" aria-label="Filter by plan verdict">
+      <option value="">All verdicts</option>
+      <option value="NET POSITIVE">Net positive</option>
+      <option value="THIN POSITIVE">Thin positive</option>
+      <option value="THIN NEGATIVE">Thin negative</option>
+      <option value="NET NEGATIVE">Net negative</option>
+    </select>
+    <label class="check"><input id="f-watch" type="checkbox"> Watchlist only</label>
+    <span class="count" id="row-count"></span>
+  </div>
+  <div class="table-wrap">
+    <table id="board-table">
+      <thead>
+        <tr>
+          <th data-sort="rank" class="num">Rank</th>
+          <th data-sort="name">Protocol</th>
+          <th data-sort="category">Category</th>
+          <th>Chains</th>
+          <th data-sort="tvl_usd" class="num">TVL</th>
+          <th data-sort="change_7d" class="num">7d TVL</th>
+          <th data-sort="multiple_used" class="num">Multiple</th>
+          <th data-sort="implied_value_usd" class="num">Implied value</th>
+          <th data-sort="plan_cost" class="num">Plan cost</th>
+          <th data-sort="plan_net" class="num">Net, Scenario S</th>
+          <th data-sort="plan_net">Verdict</th>
+        </tr>
+      </thead>
+      <tbody id="board-body"></tbody>
+    </table>
+  </div>
+  <p class="hint">Click a row for the protocol's arithmetic, its plan economics and its farm plan. Click a column heading to sort. “Global fallback” under a multiple means the protocol's category has fewer than 3 tokenized peers, so the global median — not a category fit — priced it; the row is labelled, never blended in silently.</p>
+
+  <h2 class="section-title">Fitted multiples by category</h2>
+  <p class="section-sub">Median market-cap / TVL of the tokenized protocols in each category the board actually draws on, shrunk toward the global median (<span data-fill="global_multiple">—</span>) by n/(n+4). One hue, magnitude only; the axis starts at zero.</p>
+  <div id="cat-chart"></div>
+</section>
+
+<section id="view-live" class="view hidden">
+  <p class="takeaway">The evidence, not the ranking: these protocols already trade, so the board never ranks them — their market caps are what every multiple on the board is fitted from.</p>
+  <p class="section-sub">The tokenized side of the snapshot, kept apart from the board: these protocols already trade, so the radar never ranks them. Their market caps are the data the model is fitted on — the top <span data-fill="live_shown">—</span> of <span data-fill="live_total">—</span> by market cap.</p>
+  <div class="table-wrap">
+    <table id="live-table">
+      <thead><tr><th>Protocol</th><th>Symbol</th><th>Category</th><th class="num">TVL</th><th class="num">Market cap</th><th class="num">Multiple</th><th class="num">7d TVL</th></tr></thead>
+      <tbody id="live-body"></tbody>
+    </table>
+  </div>
+</section>
+
+<section id="view-method" class="view hidden">
+  <div class="method-grid">
+    <article class="panel">
+      <h2>The value model</h2>
+      <p class="takeaway">One multiplication per protocol: TVL × a category median that the snapshot's own tokenized protocols set.</p>
+      <p>For every tokenized protocol in the snapshot, the market's own multiple is <code>mcap_usd / tvl_usd</code>. In <code>fitMultiples</code> (lib/model.ts) each category's multiple is the <strong>median</strong> of its members' multiples, shrunk toward the global median in log space with weight n/(n+4): a category priced by 3 protocols leans on the global figure, one priced by 30 mostly stands on its own. A category with fewer than 3 tokenized members gets no fit at all — its protocols are priced on the global median and the board labels them <em>global fallback</em> in the Multiple column and in their detail view. <code>impliedValueOf</code> is then one multiplication: TVL × the multiple. No protocol name is hardcoded anywhere in the fit.</p>
+      <p>The fit runs on <span data-fill="fit_n">—</span> tokenized protocols. <span data-fill="zero_mcap">—</span> protocols record a market cap of exactly $0 and are excluded: a zero multiple carries no valuation signal. Tokenized and pre-token protocols are never mixed — the board holds only protocols that record no token (market cap, gecko id and symbol all null), and it draws the same product-type line the watchlist definition draws: wrapped, staked or bridged products of a token that already trades are not launches waiting to happen, so bridge, liquid-staking and restaking product categories, exchange-fronted names and version-suffixed names sit aside. The board applies that line without the watchlist's $50M floor — the floor is a size line, the product-type line is a kind line, and only the kind line is kept.</p>
+    </article>
+    <article class="panel">
+      <h2>The out-of-sample test</h2>
+      <p class="takeaway">Fitted on two-thirds of the tokenized set and tested on the held-out third — the error below is the honest size of the method, with one development disclosure attached.</p>
+      <p><code>checkOutOfSample</code> splits the fit pool by slug order and holds out every third protocol (train <span data-fill="train_n">—</span>, held out <span data-fill="test_n">—</span>). The model is refitted on the training part only — category medians, shrinkage and the global fallback all come from training figures, so no held-out number can leak in — and scored against the held-out protocols' real market caps:</p>
+      <table class="mini">
+        <tr><th>Model</th><th class="num">Median error</th></tr>
+        <tr><td>This model (category medians, shrunk)</td><td class="num" data-fill="oos_median_ape2">—</td></tr>
+        <tr><td>Global median only</td><td class="num" data-fill="oos_global">—</td></tr>
+        <tr><td>Flat 0.25 × TVL (unfitted)</td><td class="num" data-fill="oos_flat">—</td></tr>
+      </table>
+      <p>Mean error (MAPE) is <span data-fill="oos_mape">—</span> — a few wild misses pull it far above the median, which is itself the lesson. Rank correlation on the held-out set (Spearman ρ) is <span data-fill="oos_spearman">—</span>. Growth and age adjustments were fitted the same way during development and <strong>rejected</strong>: cross-validation inside the training set scored them worse than the plain category model, and the held-out split agreed. What ships is what survived.</p>
+      <p class="honest">Read the error plainly: half of the held-out protocols' real market caps landed within ±<span data-fill="oos_median_ape3">—</span> of the estimate — a median factor of ×/<span data-fill="oos_factor2">—</span>. These are order-of-magnitude rankings for deciding where farming time and money go, not price predictions.</p>
+      <p class="honest">One disclosure the headline owes: during development, about four model variants — the growth and age adjustments among them — were consulted against this same held-out split before the specification was locked. Selection was driven by cross-validation inside the training set, but a split that has been looked at during development is not a fresh split: read the <span data-fill="oos_median_ape">—</span> as possibly slightly optimistic.</p>
+    </article>
+    <article class="panel wide">
+      <h2>Calibration — predicted against realized, by decile</h2>
+      <p class="takeaway">In <span data-fill="cal_under">—</span> of 10 deciles the model's mean prediction lands below the mean realized cap: the typical miss is a giant the category median cannot see. The log-space calibration slope is <span data-fill="cal_slope">—</span> — 1.00 would track the diagonal exactly.</p>
+      <p>The held-out <span data-fill="test_n">—</span> protocols, bucketed into deciles by predicted value. Means are arithmetic, so one giant realized cap bends its whole decile — that bend is itself the finding: this model's error is a tail phenomenon, not a uniform blur. A ratio under 1.00 means the model under-predicted that decile.</p>
+      <div id="cal-table"></div>
+    </article>
+    <article class="panel wide">
+      <h2>Where the error lives — decomposition</h2>
+      <p class="takeaway">The median hides the tail: mean error is <span data-fill="oos_mape">—</span> against a median of <span data-fill="oos_median_ape">—</span>. The worst decile of held-out misses is named below, each with its cause under a stated rule.</p>
+      <h3 class="sub-h">Median error by category (held-out)</h3>
+      <div id="dec-cat"></div>
+      <h3 class="sub-h">Median error by TVL band (held-out)</h3>
+      <div id="dec-band"></div>
+      <h3 class="sub-h">The worst decile, named</h3>
+      <p>Cause rule, applied in order: priced on the global fallback → <strong>bad peer set</strong>; TVL moved at least 25% inside the snapshot's own 7-day window → <strong>stale input</strong>; otherwise → <strong>genuine model miss</strong>.</p>
+      <div id="dec-worst"></div>
+    </article>
+    <article class="panel wide" id="model-card">
+      <h2>Model card</h2>
+      <p class="takeaway">The whole method on one card: what was fitted, on what, how it scored, where it fails, and what it assumes.</p>
+      <div class="arith card">
+        <div class="row"><span>Fit pool</span><b><span data-fill="fit_n">—</span> tokenized protocols (market cap &gt; $0 and TVL &gt; $0). Excluded: <span data-fill="zero_mcap">—</span> recording a market cap of exactly $0 and <span data-fill="dq_neg_n">—</span> recording a negative cap — both named in Data quality. A further <span data-fill="dq_partial">—</span> rows carry a symbol but no market cap (per-chain deployments of trading tokens) and enter neither the fit nor the board.</b></div>
+        <div class="row"><span>Model</span><b>Implied value = TVL × multiple (<code>impliedValueOf</code>). The multiple is the category median of mcap/TVL from <code>fitMultiples</code>, shrunk toward the global median (<span data-fill="global_multiple">—</span>) in log space with weight n/(n+4); a category with fewer than 3 tokenized peers gets the global median and the row is labelled fallback.</b></div>
+        <div class="row"><span>Validation</span><b>Slug-order split, every third protocol held out: train <span data-fill="train_n">—</span>, test <span data-fill="test_n">—</span>. Median APE <span data-fill="oos_median_ape">—</span>, MAPE <span data-fill="oos_mape">—</span>, median factor ×/<span data-fill="oos_factor">—</span>, Spearman ρ <span data-fill="oos_spearman">—</span>. Ladder (median APE): flat 0.25× <span data-fill="oos_flat">—</span> → global median only <span data-fill="oos_global">—</span> → this model <span data-fill="oos_median_ape">—</span>. Calibration slope <span data-fill="cal_slope">—</span>; under-prediction in <span data-fill="cal_under">—</span> of 10 deciles. Disclosure: about four variants were consulted against this split during development — the headline may be slightly optimistic.</b></div>
+        <div class="row"><span>Known failure modes</span><b><span data-fill="fallback_rows">—</span> of <span data-fill="board_rows">—</span> board rows — ranks 1–4 included — are priced on the global fallback, so the board's top is TVL order. The worst held-out misses are protocols whose tokens the market has nearly abandoned while their TVL persists (named in the decomposition). Categories with fewer than 3 tokenized peers get no fit at all. MAPE far above the median APE says the tail, not the typical row, carries the error.</b></div>
+        <div class="row"><span>Assumptions</span><b>Scenario S: a launch at the implied value, 5% of it to early users, the pool shared over an assumed farmed 25% of TVL. Plan positions are TVL-band midpoints; gas follows the printed schedule; protocol fees follow the printed formulas; market cap is used exactly as the snapshot records it (its single cap field — the file carries no separate FDV figure to confuse it with). Every scenario figure is an assumption set, never a prediction.</b></div>
+      </div>
+    </article>
+    <article class="panel wide">
+      <h2>Farm economics — how every plan is costed, and what Scenario S assumes</h2>
+      <p class="takeaway">Every plan is priced in integer cents and closed by a verdict; Scenario S is an assumption set, printed in full — not a forecast.</p>
+      <p>Each plan is built by <code>buildPlan</code> from the protocol's <strong>mechanism</strong> — the steps name what that mechanism actually does (supply-borrow-repay cycles for a lending loop, crossings in both directions for a bridge, epochs for an options vault, completed terms for a locker) — and priced in integer cents, so a plan's step costs sum to its stated total exactly. The plan's shape: a working position from the protocol's TVL band (bands run $50–$300 up to $2,500–$10,000; the modeled position is the band midpoint), a window of 5–10 weeks by band, two sessions a week. Gas is charged per session from a stated schedule — <strong>Ethereum $4.50, Solana $0.06, BNB Chain $0.25, Tron $0.30, layer-2 chains $0.35, any other chain $0.60</strong> — split as 2 sessions of setup, 1 to open, 1 to breadth and the rest to the core cadence. Protocol fees come from the mechanism's own formula, printed in each detail view: borrow interest at a modeled 6% APR on a 55% loan-to-value loop for lending, taker fees at 0.05% on 3× notional for perps, premiums at 2% of position per weekly roll for options, relayer fees at 0.1% of the amount crossed plus $0.75 a crossing for bridges, and so on. Mechanisms whose honest cost is gas alone — vault deposits, staking, governance — are charged gas alone; the model does not invent fees to look thorough.</p>
+      <p><strong>Scenario S</strong> is the reward side, and it is an assumption set, not a forecast: the protocol launches a token at exactly this model's implied value; <strong>5%</strong> of that value goes to early users; and the pool is shared by capital pro-rata over an assumed <strong>farmed 25% of TVL</strong> (not all TVL farms). A plan's Scenario S reward is therefore 0.05 ÷ 0.25 × multiple × modeled position. Beside it, every plan also prints the <strong>pure pro-rata bound</strong> — the same 5% pool shared over all of TVL, reward 0.05 × multiple × position — which is the harshest simple reading. The verdict keys on Scenario S, measured against the plan's own cost: <em>NET POSITIVE</em> when the net is at least the cost, <em>THIN POSITIVE</em> when it is positive but smaller, <em>THIN NEGATIVE</em> when the reward still covers at least a quarter of the cost, <em>NET NEGATIVE</em> when it covers less. What the costing leaves out, stated once: perps funding (it cuts both ways), LP impermanent loss, yield a position earns while it sits (supply yield, pool fees — real, and excluded, which makes these nets conservative), creator royalties, and the time value of the farmer's own hours. A protocol is only ever said to run a points programme conditionally — check its official channels; the snapshot cannot know.</p>
+    </article>
+    <article class="panel wide">
+      <h2>Data quality — the snapshot, audited</h2>
+      <p class="takeaway">The cleaning is part of the method: every exclusion below is a rule with a count, applied before any fitting — nothing was quietly dropped.</p>
+      <div id="dq-body"></div>
+    </article>
+    <article class="panel">
+      <h2>Words and limits</h2>
+      <p class="takeaway">The strongest claim this file supports is that a protocol <em>records no token</em> — everything on the board is read inside that limit.</p>
+      <p>A protocol whose three token fields are null <em>records no token</em> in this snapshot. That is the strongest statement the file supports, and it is the phrase used throughout — the snapshot cannot prove a token does not exist, only that DefiLlama records none. The snapshot is frozen at <span data-fill="as_of2">—</span>; nothing here is live data. Implied values inherit every limit of the multiple method: a category median cannot see team, unlocks, revenue or audits, and the wide out-of-sample error above is the honest size of that blindness. Scenario S inherits the same error twice over, since its reward is proportional to the implied value — treat every net on this board as a planning figure with a wide interval around it, not as a quote.</p>
+    </article>
+  </div>
+</section>
+
+<aside id="detail" class="detail hidden" aria-label="Protocol detail">
+  <button id="detail-close" type="button" aria-label="Close detail">×</button>
+  <div id="detail-content"></div>
+</aside>
+
+<footer>
+  <p>Built from the sealed snapshot only — no network, no live prices. Source: <span data-fill="source2">—</span>. The model, its test, its plan costing and Scenario S are described under “How it works”.</p>
+</footer>
+
+<script src="../data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
